@@ -5,7 +5,8 @@ import cv2
 from PIL import Image
 from sys import getsizeof
 
-#Configuración inicial del socket.
+#MULTICAST-----------------------------------------------
+"""#Configuración inicial del socket.
 grupo_multicast = '224.1.1.1'
 info_servidor = ('', 10000)
 
@@ -16,6 +17,16 @@ sock.bind(info_servidor)
 group = socket.inet_aton(grupo_multicast)
 mreq = struct.pack('4sL', group, socket.INADDR_ANY)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+"""
+
+#BROADCAST-----------------------------------
+#Se crea el socket UDP.
+cliente = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+cliente.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+#Se permite conexiones broadcast.
+cliente.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+cliente.bind(("", 10000))
 
 for i in range(1, 7):
     num_img = i
@@ -24,7 +35,7 @@ for i in range(1, 7):
     while(not info_imagen_recibida):
         print("Esperando mensaje... ")
         try:
-            mensaje_recibido, direccion_envio = sock.recvfrom(128)
+            mensaje_recibido, direccion_envio = cliente.recvfrom(128)
             print("Tamanio cabecera: ", getsizeof(mensaje_recibido), " bytes.")
         except:
             print("El servidor está a la mitad del envío de otra imagen, esperando a que termine...")
@@ -36,7 +47,7 @@ for i in range(1, 7):
     print("Tamanio cabecera: ", getsizeof(mensaje_recibido), " bytes.")"""
 
     print("Enviando ACK a ", direccion_envio)
-    sock.sendto(bytes('ACK', 'utf8'), direccion_envio)
+    cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
 
     informacion_imagen = mensaje_recibido.decode().split('_')
     num_partes = informacion_imagen[0]
@@ -49,11 +60,11 @@ for i in range(1, 7):
     lista_segmentos = []
 
     for i in range(int(num_partes)):
-        mensaje_recibido, direccion_envio = sock.recvfrom(int(tamanio_buffer))
+        mensaje_recibido, direccion_envio = cliente.recvfrom(int(tamanio_buffer))
         lista_segmentos.append(mensaje_recibido)
 
         print("Enviando ACK a ", direccion_envio)
-        sock.sendto(bytes('ACK', 'utf8'), direccion_envio)
+        cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
 
     #info_bytes_img = ''.split(lista_segmentos)
 

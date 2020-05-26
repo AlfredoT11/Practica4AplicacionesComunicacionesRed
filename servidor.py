@@ -10,16 +10,28 @@ from math import ceil
 
 ruta_imagenes = 'img/'
 
-#--------------------------------------------------
-#Configuración inicial del socket para multicast.
+#MULTICAST------------------------------------------------
+"""#Configuración inicial del socket para multicast.
 grupo_multicast = ('224.1.1.1', 10000)
 #Se crea el socket UDP (Recordemos que el multicast se implementa con UDP)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(0.2)
 ttl = struct.pack('b', 1)
-sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)"""
+
+#BROADCAST------------------------------------------------
+#Se crea el socket UDP.
+servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+#Se habilita el puerto para poder ser utilizado múltiples veces.
+servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+#Se permite realizar broadcast.
+servidor.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+#Se establece un tiempo máximo de respuesta.
+servidor.settimeout(0.2)
 
 lista_imagenes = os.listdir(ruta_imagenes)
+lista_imagenes.sort()
+print("Lista: ", lista_imagenes)
 
 for num_img, nombre_img in enumerate(lista_imagenes):
     print(nombre_img)
@@ -52,11 +64,12 @@ for num_img, nombre_img in enumerate(lista_imagenes):
     informacion_imagen = str(num_partes)+'_'+str(tamanio_buffer)+'_'+extension
 
     try:
-        enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast)
+        #enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast) Se utiliza en multicast.
+        enviado = servidor.sendto(informacion_imagen.encode(), ('<broadcast>', 10000)) #Se utiliza en broadcast.
         while(True):
             print(sys.stderr, "Esperando respuestas...")
             try:
-                mensaje_recibido, emisor = sock.recvfrom(1024)
+                mensaje_recibido, emisor = servidor.recvfrom(1024)
             except socket.timeout:
                 print(sys.stderr, "Tiempo de recepción de respuestas finalizado.")
                 break
@@ -75,11 +88,12 @@ for num_img, nombre_img in enumerate(lista_imagenes):
             segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
 
         try:
-            enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast)
+            #enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast) Se usa en multicast.
+            enviado = servidor.sendto(segmento_a_enviar_img, ('<broadcast>', 10000)) #Se utiliza en broadcast.
             while(True):
                 print(sys.stderr, "Esperando respuestas...")
                 try:
-                    mensaje_recibido, emisor = sock.recvfrom(1024)
+                    mensaje_recibido, emisor = servidor.recvfrom(1024)
                 except socket.timeout:
                     print(sys.stderr, "Tiempo de recepción de respuestas finalizado.")
                     break
