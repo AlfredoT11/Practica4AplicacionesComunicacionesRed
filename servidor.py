@@ -20,6 +20,22 @@ sock.settimeout(0.2)
 ttl = struct.pack('b', 1)
 sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)"""
 
+import subprocess
+subredes_activas = []
+
+
+for ping in range(1,5):
+    address = "10.10." + str(ping) + ".255"
+    res = subprocess.call(['ping', '-c', '3', '-b', address])
+    if res == 0:
+        print("Ping to", address, "OK")
+        subredes_activas.append(ping)
+    elif res == 2:
+        print("No response from", address)
+    else:
+        print("ping to", address, "failed!")
+
+
 #BROADCAST------------------------------------------------
 #Se crea el socket UDP.
 servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -31,7 +47,7 @@ servidor.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 #Se establece un tiempo máximo de respuesta.
 servidor.settimeout(0.2)
 
-direccion_broadcast = '10.10.1.255'
+direccion_broadcast = '10.10.'
 
 
 lista_imagenes = os.listdir(ruta_imagenes)
@@ -68,33 +84,11 @@ for num_img, nombre_img in enumerate(lista_imagenes):
     
     informacion_imagen = str(num_partes)+'_'+str(tamanio_buffer)+'_'+extension
 
-    try:
-        #enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast) Se utiliza en multicast.
-        enviado = servidor.sendto(informacion_imagen.encode(), (direccion_broadcast, 12345)) #Se utiliza en broadcast.
-        while(True):
-            print(sys.stderr, "Esperando respuestas...")
-            try:
-                mensaje_recibido, emisor = servidor.recvfrom(1024)
-            except socket.timeout:
-                print(sys.stderr, "Tiempo de recepción de respuestas finalizado.")
-                break
-            else:
-                print(sys.stderr, "", mensaje_recibido, " de: ", emisor)
-    except ValueError:
-        print("Error: ", ValueError)
-
-    sleep(2)
-
-    aux_posicion_buffer_img = 0
-    for i in range(num_partes):
-        if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
-            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
-        else:
-            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
+    for subred in subredes_activas:
 
         try:
-            #enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast) Se usa en multicast.
-            enviado = servidor.sendto(segmento_a_enviar_img, (direccion_broadcast, 12345)) #Se utiliza en broadcast.
+            #enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast) Se utiliza en multicast.
+            enviado = servidor.sendto(informacion_imagen.encode(), (direccion_broadcast+str(subred)+'.255', 12345)) #Se utiliza en broadcast.
             while(True):
                 print(sys.stderr, "Esperando respuestas...")
                 try:
@@ -106,6 +100,32 @@ for num_img, nombre_img in enumerate(lista_imagenes):
                     print(sys.stderr, "", mensaje_recibido, " de: ", emisor)
         except ValueError:
             print("Error: ", ValueError)
+
+        sleep(2)
+
+    aux_posicion_buffer_img = 0
+    for i in range(num_partes):
+        if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
+            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
+        else:
+            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
+
+        for subred in subredes_activas:
+
+            try:
+                #enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast) Se usa en multicast.
+                enviado = servidor.sendto(segmento_a_enviar_img, (direccion_broadcast+str(subred)+'.255', 12345)) #Se utiliza en broadcast.
+                while(True):
+                    print(sys.stderr, "Esperando respuestas...")
+                    try:
+                        mensaje_recibido, emisor = servidor.recvfrom(1024)
+                    except socket.timeout:
+                        print(sys.stderr, "Tiempo de recepción de respuestas finalizado.")
+                        break
+                    else:
+                        print(sys.stderr, "", mensaje_recibido, " de: ", emisor)
+            except ValueError:
+                print("Error: ", ValueError)
 
         aux_posicion_buffer_img += tamanio_buffer
 
