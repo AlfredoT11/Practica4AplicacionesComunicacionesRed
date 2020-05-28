@@ -8,6 +8,7 @@ import sys
 from time import sleep
 from math import ceil
 
+
 ruta_imagenes = 'img/'
 
 #MULTICAST------------------------------------------------
@@ -22,12 +23,16 @@ sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)"""
 #BROADCAST------------------------------------------------
 #Se crea el socket UDP.
 servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+servidor.bind(('10.10.2.4', 12345))
 #Se habilita el puerto para poder ser utilizado múltiples veces.
 servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 #Se permite realizar broadcast.
 servidor.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 #Se establece un tiempo máximo de respuesta.
 servidor.settimeout(0.2)
+
+direccion_broadcast = '10.10.1.255'
+
 
 lista_imagenes = os.listdir(ruta_imagenes)
 lista_imagenes.sort()
@@ -65,7 +70,7 @@ for num_img, nombre_img in enumerate(lista_imagenes):
 
     try:
         #enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast) Se utiliza en multicast.
-        enviado = servidor.sendto(informacion_imagen.encode(), ('<broadcast>', 10000)) #Se utiliza en broadcast.
+        enviado = servidor.sendto(informacion_imagen.encode(), (direccion_broadcast, 12345)) #Se utiliza en broadcast.
         while(True):
             print(sys.stderr, "Esperando respuestas...")
             try:
@@ -89,7 +94,7 @@ for num_img, nombre_img in enumerate(lista_imagenes):
 
         try:
             #enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast) Se usa en multicast.
-            enviado = servidor.sendto(segmento_a_enviar_img, ('<broadcast>', 10000)) #Se utiliza en broadcast.
+            enviado = servidor.sendto(segmento_a_enviar_img, (direccion_broadcast, 12345)) #Se utiliza en broadcast.
             while(True):
                 print(sys.stderr, "Esperando respuestas...")
                 try:
@@ -107,4 +112,4 @@ for num_img, nombre_img in enumerate(lista_imagenes):
     sleep(5)
 
 print(sys.stderr, "Cerrando socket...")
-sock.close()
+servidor.close()
