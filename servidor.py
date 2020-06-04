@@ -103,14 +103,14 @@ for num_img, nombre_img in enumerate(lista_imagenes):
 
         sleep(2)
 
-    for subred in subredes_activas:
+    aux_posicion_buffer_img = 0
+    for i in range(num_partes):
+        if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
+            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
+        else:
+            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
 
-        aux_posicion_buffer_img = 0
-        for i in range(num_partes):
-            if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
-                segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
-            else:
-                segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
+        for subred in subredes_activas:
 
             print("Enviando a subred: ",direccion_broadcast+str(subred)+".255")
             try:
@@ -128,7 +128,7 @@ for num_img, nombre_img in enumerate(lista_imagenes):
             except ValueError:
                 print("Error: ", ValueError)
 
-            aux_posicion_buffer_img += tamanio_buffer
+        aux_posicion_buffer_img += tamanio_buffer
 
     sleep(5)
 
