@@ -26,7 +26,7 @@ cliente.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 #Se permite conexiones broadcast.
 cliente.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-cliente.bind(("", 10000))
+cliente.bind(('', 12345))
 
 for i in range(1, 7):
     num_img = i
@@ -36,7 +36,7 @@ for i in range(1, 7):
         print("Esperando mensaje... ")
         try:
             mensaje_recibido, direccion_envio = cliente.recvfrom(128)
-            print("Tamanio cabecera: ", getsizeof(mensaje_recibido), " bytes.")
+            #print("Tamanio cabecera: ", getsizeof(mensaje_recibido), " bytes.")
         except:
             print("El servidor está a la mitad del envío de otra imagen, esperando a que termine...")
         else:
@@ -46,8 +46,8 @@ for i in range(1, 7):
     mensaje_recibido, direccion_envio = sock.recvfrom(1024)
     print("Tamanio cabecera: ", getsizeof(mensaje_recibido), " bytes.")"""
 
-    print("Enviando ACK a ", direccion_envio)
-    cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
+#    print("Recibiendo segmento de ", direccion_envio)
+    #cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
 
     informacion_imagen = mensaje_recibido.decode().split('_')
     num_partes = informacion_imagen[0]
@@ -55,7 +55,7 @@ for i in range(1, 7):
     extension_img = informacion_imagen[2]
 
     print("Num partes:", num_partes)
-    print("Tamanio buffer: ", tamanio_buffer)
+    print("Tamanio buffer de segmento: ", tamanio_buffer)
 
     lista_segmentos = []
 
@@ -63,14 +63,14 @@ for i in range(1, 7):
         mensaje_recibido, direccion_envio = cliente.recvfrom(int(tamanio_buffer))
         lista_segmentos.append(mensaje_recibido)
 
-        print("Enviando ACK a ", direccion_envio)
-        cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
+#        print("Enviando ACK a ", direccion_envio)
+        #cliente.sendto(bytes('ACK', 'utf8'), direccion_envio)
 
     #info_bytes_img = ''.split(lista_segmentos)
 
-    print("Informacion: ", lista_segmentos[0])
+#    print("Informacion: ", lista_segmentos[0])
     print("--------------------")
-    print("Informacion: ", lista_segmentos[1])
+#    print("Informacion: ", lista_segmentos[1])
 
     info_bytes_completa = b''
     for segmento in lista_segmentos:

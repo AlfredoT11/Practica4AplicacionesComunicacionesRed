@@ -39,7 +39,7 @@ for ping in range(1,5):
 #BROADCAST------------------------------------------------
 #Se crea el socket UDP.
 servidor = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-servidor.bind(('10.10.2.4', 12345))
+servidor.bind(('10.10.2.5', 12345))
 #Se habilita el puerto para poder ser utilizado múltiples veces.
 servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 #Se permite realizar broadcast.
@@ -76,11 +76,11 @@ for num_img, nombre_img in enumerate(lista_imagenes):
         num_partes = int(input("Partes en las que se dividirá la imagen: "))
         tamanio_buffer = ceil(tamanio_bytes_img/num_partes)
         #2**16 es el tamaño máximo del buffer. 128 es el tamaño máximo para la cabecera inicial de información.
-        if( tamanio_buffer < 2**16 and tamanio_buffer > 128): 
-            print("Número de partes válido.")
+        if( tamanio_buffer < 17900 and tamanio_buffer > 128): 
+            print("Número de partes válido. ")
             is_tamanio_valido = True
         else:
-            print("Número de partes inválido. Intenta de nuevo.")
+            print("Número de partes inválido. El tamanio resultante de las partes en las que se dividirá es demasiado grande o pequeño.")
     
     informacion_imagen = str(num_partes)+'_'+str(tamanio_buffer)+'_'+extension
 
@@ -90,7 +90,7 @@ for num_img, nombre_img in enumerate(lista_imagenes):
             #enviado = sock.sendto(informacion_imagen.encode(), grupo_multicast) Se utiliza en multicast.
             enviado = servidor.sendto(informacion_imagen.encode(), (direccion_broadcast+str(subred)+'.255', 12345)) #Se utiliza en broadcast.
             while(True):
-                print(sys.stderr, "Esperando respuestas...")
+                #print(sys.stderr, "Esperando respuestas...")
                 try:
                     mensaje_recibido, emisor = servidor.recvfrom(1024)
                 except socket.timeout:
@@ -103,20 +103,21 @@ for num_img, nombre_img in enumerate(lista_imagenes):
 
         sleep(2)
 
-    aux_posicion_buffer_img = 0
-    for i in range(num_partes):
-        if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
-            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
-        else:
-            segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
+    for subred in subredes_activas:
 
-        for subred in subredes_activas:
+        aux_posicion_buffer_img = 0
+        for i in range(num_partes):
+            if(aux_posicion_buffer_img+tamanio_buffer > tamanio_bytes_img):
+                segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:]
+            else:
+                segmento_a_enviar_img = img_ser[aux_posicion_buffer_img:aux_posicion_buffer_img+tamanio_buffer]
 
+            print("Enviando a subred: ",direccion_broadcast+str(subred)+".255")
             try:
                 #enviado = sock.sendto(segmento_a_enviar_img, grupo_multicast) Se usa en multicast.
                 enviado = servidor.sendto(segmento_a_enviar_img, (direccion_broadcast+str(subred)+'.255', 12345)) #Se utiliza en broadcast.
                 while(True):
-                    print(sys.stderr, "Esperando respuestas...")
+                    #print(sys.stderr, "Esperando respuestas...")
                     try:
                         mensaje_recibido, emisor = servidor.recvfrom(1024)
                     except socket.timeout:
@@ -127,7 +128,7 @@ for num_img, nombre_img in enumerate(lista_imagenes):
             except ValueError:
                 print("Error: ", ValueError)
 
-        aux_posicion_buffer_img += tamanio_buffer
+            aux_posicion_buffer_img += tamanio_buffer
 
     sleep(5)
 
